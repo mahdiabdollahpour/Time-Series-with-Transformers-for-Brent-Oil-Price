@@ -5,137 +5,143 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-import seaborn as sns;
+# import seaborn as sns;
 
-sns.set()
+# sns.set()
 from tst import Transformer
 from models.custom_transformer import CustomTransformer
+from models.transformer_lstm import TransformerLSTM
+from sklearn.metrics import mean_squared_error
 
-BATCH_SIZE = 128
-NUM_WORKERS = 0
+from util import plot_result, plot_loss
+
+save_path = 'saved/transformer_checkpoint.pth'
+BATCH_SIZE = 20
 LR = 1e-5
-EPOCHS = 50
-attention_size = 24  # Attention window size
+EPOCHS = 30
+attention_size = None  # Attention window size
 dropout = 0.2  # Dropout rate
 pe = 'original'  # Positional encoding
 chunk_mode = None
 
-K = 10  # Time window length
-d_model = 48  # Lattent dim
+# K = 10  # Time window length
+d_model = 20  # Lattent dim
 q = 8  # Query size
 v = 8  # Value size
 h = 4  # Number of heads
 N = 4  # Number of encoder and decoder to stack
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f"Using device {device}")
-from util import getdata, getdata_energy_after_Corona
+from util import getdata, getdata_energy_after_Corona, get_dataloaders, all_energy_data, full_report, energy_return_data
 
 WINDOW = 10
+train_dataloader, val_data, test_data, all_data, d_input, d_output, scaler = get_dataloaders(WINDOW,
+                                                                                             energy_return_data,
+                                                                                             BATCH_SIZE, device,
+                                                                                             shuffle=True)
 # data = np.random.random_sample((100, 15, 12))
 # data = getdata(window=WINDOW)
-data = getdata_energy_after_Corona(window=WINDOW)
-d_input = np.shape(data)[-1] - 1  # From dataset
-d_output = 1  # From dataset
-
-# data = data[:300]
-data = data.astype(np.float32)
-n_data = len(data)
-train_data = data[:int(0.7 * n_data)]
-val_data = data[int(0.7 * n_data):int(0.9 * n_data)]
-test_data = data[int(0.9 * n_data):]
-# data = torch.from_numpy(data,device=device)
-all_data = torch.tensor(data, device=device)
-train_data = torch.tensor(train_data, device=device)
-val_data = torch.tensor(val_data, device=device)
-test_data = torch.tensor(test_data, device=device)
-# print(data.shape)
-# print(data != data)
-# print((data != data).any())
-
-train_dataloader = DataLoader(train_data,
-                              batch_size=BATCH_SIZE,
-                              shuffle=True,
-                              num_workers=NUM_WORKERS
-                              )
-
-val_data = DataLoader(val_data,
-                      batch_size=BATCH_SIZE,
-                      shuffle=True,
-                      num_workers=NUM_WORKERS
-                      )
-
-all_data = DataLoader(all_data,
-                      batch_size=BATCH_SIZE,
-                      shuffle=True,
-                      num_workers=NUM_WORKERS
-                      )
 # Load transformer with Adam optimizer and MSE loss function
+arguments = {
+    'd_input': d_input, 'd_model': d_model, 'd_output': d_output, 'q': q, 'v': v,
+    'h': h, 'N': N, 'attention_size': attention_size, 'dropout': dropout,
+    'chunk_mode': chunk_mode, 'pe': pe,
+}
+from models.helpers import get_model
+
+# model_class = TransformerLSTM
 model_class = CustomTransformer
-net = model_class(d_input, d_model, d_output, q, v, h, N, attention_size=attention_size, dropout=dropout,
-                  chunk_mode=chunk_mode, pe=pe).to(device)
-clip_value = 0.5
-for p in net.parameters():
-    if p.requires_grad:
-        p.register_hook(lambda grad: torch.clamp(grad, -clip_value, clip_value))
-optimizer = optim.Adam(net.parameters(), lr=LR)
-loss_function = nn.MSELoss()
-
+# model_class = Transformer
+net, optimizer = get_model(model_class, arguments, device, lr=LR)
 # Prepare loss history
+from models.helpers import compute_loss
+
+loss_function = nn.MSELoss()
 hist_loss = np.zeros(EPOCHS)
-for idx_epoch in range(EPOCHS):
-    running_loss = 0
-    with tqdm(total=len(train_dataloader.dataset), desc=f"[Epoch {idx_epoch+1:3d}/{EPOCHS}]") as pbar:
-        for idx_batch, batch in enumerate(train_dataloader):
-            optimizer.zero_grad()
-            x = batch[:, :, :-1]
-            y = batch[:, -1, -1]
+val_losses = []
+running_losses = []
+with torch.autograd.set_detect_anomaly(True):
 
-            netout = net(x)
-            netout = netout[:, -1, -1]
-            y = y.reshape(-1, 1)
-            netout = netout.reshape(-1, 1)
-            # Comupte loss
-            loss = loss_function(netout, y)
+    for idx_epoch in range(EPOCHS):
+        running_loss = 0
+        with tqdm(total=len(train_dataloader.dataset), desc=f"[Epoch {idx_epoch+1:3d}/{EPOCHS}]") as pbar:
+            for idx_batch, batch in enumerate(train_dataloader):
+                optimizer.zero_grad()
+                x = batch[:, :, :-d_output]
+                y = batch[:, -1, -d_output]
 
-            # Backpropage loss
-            loss.backward()
+                netout = net(x)
+                netout = netout[:, -1, -d_output]
+                y = y.reshape(-1, 1)
+                netout = netout.reshape(-1, 1)
+                # Comupte loss
+                loss = loss_function(netout, y)
 
-            # Update weights
-            optimizer.step()
+                # Backpropage loss
+                loss.backward()
 
-            running_loss += loss.item()
-            pbar.set_postfix({'loss': running_loss / (idx_batch + 1)})
-            pbar.update(BATCH_SIZE)
+                # Update weights
+                optimizer.step()
 
-    hist_loss[idx_epoch] = running_loss / len(train_dataloader)
+                running_loss += loss.item()
+                pbar.set_postfix({'loss': running_loss / (idx_batch + 1)})
+                pbar.update(BATCH_SIZE)
+        val_loss = compute_loss(net, val_data, mean_squared_error)
+        train_loss = compute_loss(net, train_dataloader, mean_squared_error)
+        val_losses.append(val_loss)
+        running_losses.append(train_loss)
+        hist_loss[idx_epoch] = running_loss / len(train_dataloader)
 # plt.plot(hist_loss, 'o-')
-print(f"Loss: {float(hist_loss[-1]):5f}")
+plot_loss(val_losses, running_losses)
 
-## Select training example
-y_pred = []
-y_true = []
-for batch in all_data:
-    x = batch[:, :, :-1]
-    y = batch[:, -1, -1]
-    # x = x.reshape(1, 15, 11)
-    # Run predictions
-    with torch.no_grad():
-        netout = net(x)
 
-    # print(netout.shape)
-    # print(y.shape)
+def analzie(data_loader):
+    ## Select training example
+    y_pred = []
+    y_true = []
+    for batch in data_loader:
+        x = batch[:, :, :-1]
+        y = batch[:, -1, -1]
+        with torch.no_grad():
+            netout = net(x)
+        true = y.cpu().numpy()
+        y_true.extend(true)
+        pred = netout[:, -1, -1]
+        pred = pred.cpu().numpy()
+        # print(pred)
+        y_pred.extend(pred)
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+    # orig_y_true = scaler.inverse_transform(y_true)
+    # orig_y_pred = scaler.inverse_transform(y_pred)
+    full_report(y_true, y_pred)
 
-    idx_output_var = d_input
-    # Select real temperature
-    true = y.cpu().numpy()
-    y_true.extend(true)
-    pred = netout[:, -1, -1]
-    pred = pred.cpu().numpy()
-    # print(pred)
-    y_pred.extend(pred)
-from sklearn.metrics import mean_squared_error
+    plot_result(y_true, y_pred)
 
-print(mean_squared_error(y_true, y_pred))
-from util import plot_result
 
-plot_result(y_pred, y_true)
+analzie(all_data)
+# analzie(val_data)
+analzie(test_data)
+
+# checkpoint = {
+#     'model_state_dict': net.state_dict(),
+#     'optimizer_state_dict': optimizer.state_dict(),
+#     'args': arguments,
+#     'lr': LR
+# }
+#
+# torch.save(checkpoint, save_path)
+# Select first encoding layer
+# encoder = net.layers_encoding[0]
+#
+# # Get the first attention map
+# attn_map = encoder.attention_map[0].cpu()
+# from matplotlib import pyplot as plt
+# # Plot
+# from scipy.special import softmax
+#
+# attn_map = softmax(attn_map, axis=0)
+# # print(attn_map)
+# plt.figure(figsize=(20, 20))
+# sns.heatmap(attn_map)
+# plt.savefig("attention_map.jpg")

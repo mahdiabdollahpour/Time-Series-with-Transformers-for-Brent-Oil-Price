@@ -6,7 +6,7 @@ from tst.decoder import Decoder
 from tst.utils import generate_original_PE, generate_regular_PE
 
 
-class CustomTransformer(nn.Module):
+class TransformerLSTM(nn.Module):
     """Transformer model from Attention is All You Need.
 
     A classic transformer model adapted for sequential data.
@@ -84,7 +84,11 @@ class CustomTransformer(nn.Module):
                                                       chunk_mode=chunk_mode) for _ in range(N)])
 
         self._embedding = nn.Linear(d_input, d_model)
-        self._linear = nn.Linear(d_model, d_output)
+        n_layers = 1
+        bidirectional = False
+        lstm_size = 5
+        self.final_lstm = nn.LSTM(d_model, lstm_size, n_layers, bidirectional=bidirectional)
+        self._linear = nn.Linear(lstm_size, d_output)
 
         self.activation = activation
         pe_functions = {
@@ -133,6 +137,7 @@ class CustomTransformer(nn.Module):
         # Encoding stack
         for layer in self.layers_encoding:
             encoding = layer(encoding)
+        # print(encoding.shape)
 
         # Decoding stack
         decoding = encoding
@@ -145,9 +150,9 @@ class CustomTransformer(nn.Module):
 
         for layer in self.layers_decoding:
             decoding = layer(decoding, encoding)
-
+        lstm_out, (hn, cn) = self.final_lstm(decoding)
         # Output module
-        output = self._linear(decoding)
+        output = self._linear(lstm_out)
         if self.activation in self.activation_functions:
             output = self.activation_functions[self.activation](output)
 
