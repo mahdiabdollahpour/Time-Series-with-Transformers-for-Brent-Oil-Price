@@ -146,8 +146,8 @@ def get_dataloaders(WINDOW, data_funtion, BATCH_SIZE, device, shuffle=False):
     # data = data[:300]
     data = data.astype(np.float32)
     n_data = len(data)
-    train_data = data[:int(0.8 * n_data)]
-    val_data = data[int(0.8 * n_data):int(0.9 * n_data)]
+    train_data = data[:int(0.81 * n_data)]
+    val_data = data[int(0.81 * n_data):int(0.9 * n_data)]
     test_data = data[int(0.9 * n_data):]
     # data = torch.from_numpy(data,device=device)
     all_data = torch.tensor(data, device=device)

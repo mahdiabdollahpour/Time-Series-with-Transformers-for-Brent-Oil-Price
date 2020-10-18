@@ -8,10 +8,10 @@ from keras.layers import LSTM
 from keras.layers import Dropout
 import numpy as np
 
-WINDOW = 10
-BATCH_SIZE = 10
-epochs = 10
-lr = 0.000001
+WINDOW = 5
+BATCH_SIZE = 64
+epochs = 30
+lr = 0.001
 
 from util import getdata
 from sklearn.metrics import mean_squared_error
@@ -31,27 +31,29 @@ test_data = data[int(0.9 * n_data):]
 
 lstm_model = tf.keras.models.Sequential([
     # Shape [batch, time, features] => [batch, time, lstm_units]
-    tf.keras.layers.LSTM(10, return_sequences=True),
+    tf.keras.layers.LSTM(5, return_sequences=True),
     # Shape => [batch, time, features]
     tf.keras.layers.Dense(units=1)
 ])
 
 lstm_model.compile(
     loss='mean_squared_error',
-    optimizer=tf.keras.optimizers.Adam(0.001)
+    optimizer=tf.keras.optimizers.Adam(lr)
 )
-lstm_model.fit(train_data[:, :, :-1], train_data[:, :, -1], validation_split=0.1, epochs=30, batch_size=32, verbose=2)
-
-
-
+lstm_model.fit(train_data[:, :, :-1], train_data[:, :, -1], validation_split=0.1, epochs=epochs, batch_size=BATCH_SIZE,
+               verbose=2)
+print(lstm_model.summary())
 
 from util import plot_result, plot_loss
+
+
 def analzie(data_set):
     ## Select training example
 
     y_true = data_set[:, -1, -1]
     predictions = lstm_model.predict(data_set[:, :, :-1])
     y_pred = predictions[:, -1, -1]
+    # np.save('lstm', y_pred)
     full_report(y_true, y_pred)
     plot_result(y_true, y_pred)
 

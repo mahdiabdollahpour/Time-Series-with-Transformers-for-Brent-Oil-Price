@@ -35,6 +35,7 @@ def analize(XX,yy):
     y_pred = regr.predict(XX)
     # orig_y_true = scaler.inverse_transform(yy)
     # orig_y_pred = scaler.inverse_transform(y_pred)
+    # np.save('GPreg',y_pred)
     plot_result(yy, y_pred)
     full_report(yy, y_pred)
 

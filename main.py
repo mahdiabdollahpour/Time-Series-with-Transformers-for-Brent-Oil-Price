@@ -16,25 +16,25 @@ from sklearn.metrics import mean_squared_error
 from util import plot_result, plot_loss
 
 save_path = 'saved/transformer_checkpoint.pth'
-BATCH_SIZE = 20
+BATCH_SIZE = 64
 LR = 1e-5
-EPOCHS = 30
+EPOCHS = 28
 attention_size = None  # Attention window size
 dropout = 0.2  # Dropout rate
 pe = 'original'  # Positional encoding
 chunk_mode = None
 
 # K = 10  # Time window length
-d_model = 20  # Lattent dim
-q = 8  # Query size
-v = 8  # Value size
-h = 4  # Number of heads
-N = 4  # Number of encoder and decoder to stack
+d_model = 5  # Lattent dim
+q = 2  # Query size
+v = 2  # Value size
+h = 2 # Number of heads
+N = 1 # Number of encoder and decoder to stack
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f"Using device {device}")
 from util import getdata, getdata_energy_after_Corona, get_dataloaders, all_energy_data, full_report, energy_return_data
 
-WINDOW = 10
+WINDOW = 5
 train_dataloader, val_data, test_data, all_data, d_input, d_output, scaler = get_dataloaders(WINDOW,
                                                                                              energy_return_data,
                                                                                              BATCH_SIZE, device,
@@ -53,6 +53,8 @@ from models.helpers import get_model
 model_class = CustomTransformer
 # model_class = Transformer
 net, optimizer = get_model(model_class, arguments, device, lr=LR)
+total_params = sum(p.numel() for p in net.parameters() if p.requires_grad)
+print(total_params)
 # Prepare loss history
 from models.helpers import compute_loss
 
@@ -112,10 +114,11 @@ def analzie(data_loader):
         y_pred.extend(pred)
     y_true = np.array(y_true)
     y_pred = np.array(y_pred)
+    # np.save('transformer',y_pred)
+    # np.save('ture',y_true)
     # orig_y_true = scaler.inverse_transform(y_true)
     # orig_y_pred = scaler.inverse_transform(y_pred)
     full_report(y_true, y_pred)
-
     plot_result(y_true, y_pred)
 
 

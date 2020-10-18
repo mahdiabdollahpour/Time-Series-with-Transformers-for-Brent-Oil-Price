@@ -86,7 +86,7 @@ class TransformerLSTM(nn.Module):
         self._embedding = nn.Linear(d_input, d_model)
         n_layers = 1
         bidirectional = False
-        lstm_size = 5
+        lstm_size = 10
         self.final_lstm = nn.LSTM(d_model, lstm_size, n_layers, bidirectional=bidirectional)
         self._linear = nn.Linear(lstm_size, d_output)
 
@@ -143,13 +143,13 @@ class TransformerLSTM(nn.Module):
         decoding = encoding
 
         # Add position encoding
-        if self._generate_PE is not None:
-            positional_encoding = self._generate_PE(K, self._d_model)
-            positional_encoding = positional_encoding.to(decoding.device)
-            decoding.add_(positional_encoding)
-
-        for layer in self.layers_decoding:
-            decoding = layer(decoding, encoding)
+        # if self._generate_PE is not None:
+        #     positional_encoding = self._generate_PE(K, self._d_model)
+        #     positional_encoding = positional_encoding.to(decoding.device)
+        #     decoding.add_(positional_encoding)
+        #
+        # for layer in self.layers_decoding:
+        #     decoding = layer(decoding, encoding)
         lstm_out, (hn, cn) = self.final_lstm(decoding)
         # Output module
         output = self._linear(lstm_out)
