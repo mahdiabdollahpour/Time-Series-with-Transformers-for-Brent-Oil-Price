@@ -49,17 +49,18 @@ print(lstm_model.summary())
 from util import plot_result, plot_loss
 
 
-def analzie(data_set):
+def analzie(data_set,save=False):
     ## Select training example
 
     y_true = data_set[:, -1, -1]
     predictions = lstm_model.predict(data_set[:, :, :-1])
     y_pred = predictions[:, -1, -1]
-    # np.save('lstm', y_pred)
+    if save:
+        np.save('lstm', y_pred)
     full_report(y_true, y_pred)
     plot_result(y_true, y_pred)
 
 
-analzie(data)
+analzie(data,True)
 # analzie(val_data)
 analzie(test_data)

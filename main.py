@@ -99,7 +99,7 @@ with torch.autograd.set_detect_anomaly(True):
 plot_loss(val_losses, running_losses)
 
 
-def analzie(data_loader):
+def analzie(data_loader,save=False):
     ## Select training example
     y_pred = []
     y_true = []
@@ -116,17 +116,18 @@ def analzie(data_loader):
         y_pred.extend(pred)
     y_true = np.array(y_true)
     y_pred = np.array(y_pred)
-    np.save('transformer',y_pred)
-    np.save('ture',y_true)
+    if save:
+        np.save('transformer',y_pred)
+        np.save('ture',y_true)
     # orig_y_true = scaler.inverse_transform(y_true)
     # orig_y_pred = scaler.inverse_transform(y_pred)
     full_report(y_true, y_pred)
     plot_result(y_true, y_pred)
 
 
-analzie(all_data)
+analzie(all_data,True)
 # analzie(val_data)
-# analzie(test_data)
+analzie(test_data)
 
 checkpoint = {
     'model_state_dict': net.state_dict(),

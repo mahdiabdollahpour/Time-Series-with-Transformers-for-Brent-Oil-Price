@@ -3,8 +3,8 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 from util import getdata_energy_after_Corona, plot_result, all_energy_data, full_report, energy_return_data
-
-data, _, scaler = energy_return_data(window=10)
+window = 25
+data, _, scaler = energy_return_data(window=window)
 # data = getdata_energy_after_Corona(window=10)
 X = data[:, :, :-1]
 a, b, c = np.shape(X)
@@ -29,10 +29,10 @@ def analize(XX, yy):
     y_pred = regr.predict(XX)
     # orig_y_true = scaler.inverse_transform(yy)
     # orig_y_pred = scaler.inverse_transform(y_pred)
-    # np.save('svr',y_pred)
+    np.save('svr',y_pred)
     plot_result(yy, y_pred)
     full_report(yy, y_pred)
 
 
 analize(X, y)
-analize(X_test, y_test)
+# analize(X_test, y_test)

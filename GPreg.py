@@ -8,9 +8,9 @@ from sklearn.gaussian_process.kernels import DotProduct, WhiteKernel
 kernel = DotProduct() + WhiteKernel()
 import numpy as np
 from util import getdata_energy_after_Corona, plot_result, all_energy_data, full_report, energy_return_data
-
+window = 25
 # data = getdata_energy_after_Corona(window=10)
-data, _,scaler = getdata_energy_after_Corona(window=5)
+data, _,scaler = energy_return_data(window=window)
 X = data[:, :, :-1]
 a, b, c = np.shape(X)
 X = np.reshape(X, (-1, b * c))
@@ -35,9 +35,9 @@ def analize(XX,yy):
     y_pred = regr.predict(XX)
     # orig_y_true = scaler.inverse_transform(yy)
     # orig_y_pred = scaler.inverse_transform(y_pred)
-    # np.save('GPreg',y_pred)
+    np.save('GPreg',y_pred)
     plot_result(yy, y_pred)
     full_report(yy, y_pred)
 
 analize(X,y)
-analize(X_test,y_test)
+# analize(X_test,y_test)
