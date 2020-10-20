@@ -8,10 +8,10 @@ from keras.layers import LSTM
 from keras.layers import Dropout
 import numpy as np
 
-WINDOW = 5
+WINDOW = 25
 BATCH_SIZE = 64
-epochs = 30
-lr = 0.001
+epochs = 25
+lr = 0.0005
 
 from util import getdata
 from sklearn.metrics import mean_squared_error
@@ -25,13 +25,15 @@ d_output = 1  # From dataset
 # data = data[:300]
 data = data.astype(np.float32)
 n_data = len(data)
+
 train_data = data[:int(0.9 * n_data)]
 # val_data = data[int(0.8 * n_data):int(0.9 * n_data)]
 test_data = data[int(0.9 * n_data):]
 
 lstm_model = tf.keras.models.Sequential([
     # Shape [batch, time, features] => [batch, time, lstm_units]
-    tf.keras.layers.LSTM(5, return_sequences=True),
+    tf.keras.layers.LSTM(20, return_sequences=True),
+
     # Shape => [batch, time, features]
     tf.keras.layers.Dense(units=1)
 ])

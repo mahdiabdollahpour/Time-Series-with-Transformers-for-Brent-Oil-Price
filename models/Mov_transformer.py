@@ -6,7 +6,7 @@ from tst.decoder import Decoder
 from tst.utils import generate_original_PE, generate_regular_PE
 
 
-class CustomTransformer(nn.Module):
+class MoveTransformer(nn.Module):
     """Transformer model from Attention is All You Need.
 
     A classic transformer model adapted for sequential data.
@@ -75,23 +75,23 @@ class CustomTransformer(nn.Module):
                                                       attention_size=attention_size,
                                                       dropout=dropout,
                                                       chunk_mode=chunk_mode) for _ in range(N)])
-        # self.layers_decoding = nn.ModuleList([Decoder(d_model,
-        #                                               q,
-        #                                               v,
-        #                                               h,
-        #                                               attention_size=attention_size,
-        #                                               dropout=dropout,
-        #                                               chunk_mode=chunk_mode) for _ in range(N)])
+        self.layers_decoding = nn.ModuleList([Decoder(d_model,
+                                                      q,
+                                                      v,
+                                                      h,
+                                                      attention_size=attention_size,
+                                                      dropout=dropout,
+                                                      chunk_mode=chunk_mode) for _ in range(N)])
 
         self._embedding = nn.Linear(d_input, d_model)
         self._linear = nn.Linear(d_model, d_output)
-
+        self.softmax = nn.Softmax(dim=1)
         self.activation = activation
         pe_functions = {
             'original': generate_original_PE,
             'regular': generate_regular_PE,
         }
-        self.activation_functions = { # for last number
+        self.activation_functions = {  # for last number
             'sigmoid': torch.sigmoid,
             'relu': torch.relu,
             'tanh': torch.tanh,
@@ -138,17 +138,18 @@ class CustomTransformer(nn.Module):
         decoding = encoding
 
         # Add position encoding
-        # if self._generate_PE is not None:
-        #     positional_encoding = self._generate_PE(K, self._d_model)
-        #     positional_encoding = positional_encoding.to(decoding.device)
-        #     decoding.add_(positional_encoding)
-        #
-        # for layer in self.layers_decoding:
-        #     decoding = layer(decoding, encoding)
+        if self._generate_PE is not None:
+            positional_encoding = self._generate_PE(K, self._d_model)
+            positional_encoding = positional_encoding.to(decoding.device)
+            decoding.add_(positional_encoding)
+
+        for layer in self.layers_decoding:
+            decoding = layer(decoding, encoding)
 
         # Output module
         output = self._linear(decoding)
         if self.activation in self.activation_functions:
             output = self.activation_functions[self.activation](output)
         output = torch.sigmoid(output)
+        # output = self.softmax(output)
         return output

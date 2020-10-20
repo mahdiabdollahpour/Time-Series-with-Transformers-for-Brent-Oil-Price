@@ -10,7 +10,7 @@ import numpy as np
 from util import getdata_energy_after_Corona, plot_result, all_energy_data, full_report, energy_return_data
 
 # data = getdata_energy_after_Corona(window=10)
-data, _,scaler = energy_return_data(window=10)
+data, _,scaler = getdata_energy_after_Corona(window=5)
 X = data[:, :, :-1]
 a, b, c = np.shape(X)
 X = np.reshape(X, (-1, b * c))

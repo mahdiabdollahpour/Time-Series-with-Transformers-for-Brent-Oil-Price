@@ -97,9 +97,9 @@ def getdata_energy_after_Corona(window, time_difference=True):
 
     print(np_data[0])
 
-    scaler = preprocessing.StandardScaler(with_mean=True, with_std=True)
+    # scaler = preprocessing.StandardScaler(with_mean=True, with_std=True)
     # scaler = preprocessing.Normalizer()
-    # scaler = preprocessing.MinMaxScaler()
+    scaler = preprocessing.MinMaxScaler()
     np_data = scaler.fit_transform(np_data)
     # np_data = np_data
     print(np_data[0])
@@ -112,10 +112,10 @@ def getdata_energy_after_Corona(window, time_difference=True):
             seq.append(np_data[i + j])
         windowed.append(seq)
     windowed = np.array(windowed)
-    return windowed, np_data
+    return windowed, np_data, scaler
 
 
-def plot_result(y_true,y_pred ):
+def plot_result(y_true, y_pred):
     xx = np.array(range(len(y_true)))
     # print(len(xx))
 
@@ -255,9 +255,55 @@ def energy_return_data(window):
     #     np_data[:, -1] = time_differenced
 
     print(np_data[0])
+    scaler1 = preprocessing.MinMaxScaler(feature_range=(0.4, 0.6))
+    # scaler1 = preprocessing.StandardScaler(with_mean=True, with_std=True)
+    # scaler2 = preprocessing.StandardScaler(with_mean=True, with_std=True)
+
+    # scaler = preprocessing.Normalizer()
+    # scaler = preprocessing.MinMaxScaler()
+    np_data = scaler1.fit_transform(np_data)
+    # np_data[:, :-1] = scaler2.fit_transform(np_data[:, :-1])
+    # np_data[:, -1:] = scaler1.fit_transform(np_data[:, -1:])
+    # np_data[:, -1] = np_data[:, -1] / 5
+    print(np_data[0])
+    n_data = len(np_data)
+    windowed = []
+    for i in range(n_data - window + 1):
+        seq = []
+        for j in range(window):
+            # print(i+j,len(data),n_data,window,n_data-window)
+            seq.append(np_data[i + j])
+        windowed.append(seq)
+    windowed = np.array(windowed)
+    return windowed, np_data, scaler1
+def energy_return_movement_data(window):
+    wb = xlrd.open_workbook(energy_return_data_path)
+    sheet = wb.sheet_by_index(0)
+    n = sheet.nrows
+    data = []
+    for i in range(2, n):
+        row = []
+        for j in range(18):
+            row.append(sheet.cell_value(i, j))
+        data.append(row)
+    np_data = np.array(data, dtype=np.float64)
+    np_data = np_data[:, [2, 13, 14, 15, 16, 17]]
+    col_mean = np.nanmean(np_data, axis=0)
+    inds = np.where(np.isnan(np_data))
+    np_data[inds] = np.take(col_mean, inds[1])
+    # print(np.argwhere(np.isnan(np_data)))
+    print(np.isnan(np.sum(np_data)))
+
+    orig = np_data[1:, -1]
+    lagged = np_data[:-1, -1]
+    time_differenced = orig - lagged
+    np_data = np_data[1:, :]
+    np_data[:, -1] = np.heaviside(time_differenced,0)
+
+    print(np_data[0])
     scaler1 = preprocessing.MinMaxScaler()
     # scaler1 = preprocessing.StandardScaler(with_mean=True, with_std=True)
-    scaler2 = preprocessing.StandardScaler(with_mean=True, with_std=True)
+    # scaler2 = preprocessing.StandardScaler(with_mean=True, with_std=True)
 
     # scaler = preprocessing.Normalizer()
     # scaler = preprocessing.MinMaxScaler()
@@ -297,3 +343,12 @@ def full_report(y_true, y_pred):
     # print('MAPE', MAPE(y_true, y_pred))
     print('MFE', MFE(y_true, y_pred))
     # print('r2_score', r2_score(y_true, y_pred))
+def plot_window(a_window):
+    xx = np.array(range(np.shape(a_window)[1]))
+    for i in range(np.shape(a_window)[2]):
+        plt.plot(xx, a_window[0,:,i], label=str(i))
+    # plt.plot(xx, losses2, label="Train losses")
+    plt.title('window')
+    plt.legend(loc="upper left")
+    # plt.savefig("losses.jpg")
+    plt.show()
