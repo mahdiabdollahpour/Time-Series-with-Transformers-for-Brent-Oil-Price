@@ -3,9 +3,9 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 from util import getdata_energy_after_Corona, plot_result, all_energy_data, full_report, energy_return_data
-
+window = 25
 # data,_ = getdata_energy_after_Corona(window=10)
-data, _, scaler = energy_return_data(window=10)
+data, _, scaler = energy_return_data(window=window)
 # data = getdata_energy_after_Corona(window=10)
 X = data[:, :, :-1]
 a, b, c = np.shape(X)

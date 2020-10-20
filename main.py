@@ -34,6 +34,7 @@ N = 2  # Number of encoder and decoder to stack
 # device = torch.device( "cpu")
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f"Using device {device}")
+
 from util import getdata, getdata_energy_after_Corona, get_dataloaders, all_energy_data, full_report, energy_return_data
 
 
@@ -115,8 +116,8 @@ def analzie(data_loader):
         y_pred.extend(pred)
     y_true = np.array(y_true)
     y_pred = np.array(y_pred)
-    # np.save('transformer',y_pred)
-    # np.save('ture',y_true)
+    np.save('transformer',y_pred)
+    np.save('ture',y_true)
     # orig_y_true = scaler.inverse_transform(y_true)
     # orig_y_pred = scaler.inverse_transform(y_pred)
     full_report(y_true, y_pred)
@@ -125,7 +126,7 @@ def analzie(data_loader):
 
 analzie(all_data)
 # analzie(val_data)
-analzie(test_data)
+# analzie(test_data)
 
 checkpoint = {
     'model_state_dict': net.state_dict(),
