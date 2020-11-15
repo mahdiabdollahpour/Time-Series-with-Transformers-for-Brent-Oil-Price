@@ -61,6 +61,6 @@ def analzie(data_set,save=False):
     plot_result(y_true, y_pred)
 
 
-analzie(data,True)
+analzie(data)
 # analzie(val_data)
 analzie(test_data)

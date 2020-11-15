@@ -31,8 +31,8 @@ q = 8  # Query size
 v = 8  # Value size
 h = 4  # Number of heads
 N = 2  # Number of encoder and decoder to stack
-# device = torch.device( "cpu")
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device( "cpu")
+# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f"Using device {device}")
 
 from util import getdata, getdata_energy_after_Corona, get_dataloaders, all_energy_data, full_report, energy_return_data
@@ -41,9 +41,8 @@ from util import getdata, getdata_energy_after_Corona, get_dataloaders, all_ener
 train_dataloader, val_data, test_data, all_data, d_input, d_output, scaler = get_dataloaders(WINDOW,
                                                                                              energy_return_data,
                                                                                              BATCH_SIZE, device,
-                                                                                             shuffle=True)
-# data = np.random.random_sample((100, 15, 12))
-# data = getdata(window=WINDOW)
+                                                                                             shuffle=True,fiveday=False)
+
 # Load transformer with Adam optimizer and MSE loss function
 arguments = {
     'd_input': d_input, 'd_model': d_model, 'd_output': d_output, 'q': q, 'v': v,
@@ -57,7 +56,7 @@ model_class = CustomTransformer
 # model_class = Transformer
 net, optimizer = get_model(model_class, arguments, device, lr=LR)
 total_params = sum(p.numel() for p in net.parameters() if p.requires_grad)
-print(total_params)
+# print(total_params)
 # Prepare loss history
 from models.helpers import compute_loss
 
@@ -118,22 +117,22 @@ def analzie(data_loader,save=False):
     y_pred = np.array(y_pred)
     if save:
         np.save('transformer',y_pred)
-        np.save('ture',y_true)
+        np.save('true',y_true)
     # orig_y_true = scaler.inverse_transform(y_true)
     # orig_y_pred = scaler.inverse_transform(y_pred)
     full_report(y_true, y_pred)
     plot_result(y_true, y_pred)
 
 
-analzie(all_data,True)
+analzie(all_data)
 # analzie(val_data)
 analzie(test_data)
 
-checkpoint = {
-    'model_state_dict': net.state_dict(),
-    'optimizer_state_dict': optimizer.state_dict(),
-    'args': arguments,
-    'lr': LR
-}
-
-torch.save(checkpoint, save_path)
+# checkpoint = {
+#     'model_state_dict': net.state_dict(),
+#     'optimizer_state_dict': optimizer.state_dict(),
+#     'args': arguments,
+#     'lr': LR
+# }
+#
+# torch.save(checkpoint, save_path)

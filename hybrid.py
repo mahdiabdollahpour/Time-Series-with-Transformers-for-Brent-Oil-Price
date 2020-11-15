@@ -4,46 +4,51 @@ from sklearn.preprocessing import StandardScaler
 import numpy as np
 from util import getdata_energy_after_Corona, plot_result, all_energy_data, full_report, energy_return_data
 
-window = 25
-true = np.load('true.npy')
+window = 1
 
-lstm = np.load('lstm.npy')
-transformer = np.load('transformer.npy')
-mlpreg = np.load('mlpreg.npy')
-svr = np.load('svr.npy')
-GPreg = np.load('GPreg.npy')
+results_address = '1_Day_forecasts/'
+true = np.load(results_address + 'true.npy')
+lstm = np.load(results_address + 'lstm.npy')
+transformer = np.load(results_address + 'transformer.npy')
+mlpreg = np.load(results_address + 'mlpreg.npy')
+svr = np.load(results_address + 'svr.npy')
+GPreg = np.load(results_address + 'GPreg.npy')
 
-lstm = lstm[5:]
-transformer = transformer[5:]
-mlpreg = mlpreg[5:]
-svr = svr[5:]
-GPreg = GPreg[5:]
+lstm = lstm[window:]
+transformer = transformer[window:]
+mlpreg = mlpreg[window:]
+svr = svr[window:]
+GPreg = GPreg[window:]
+lagged = []
+for i in range(window):
+    lagged.append(true[i:-(window - i)])
+    # lagged_5 = true[:-5]
+    # lagged_4 = true[1:-4]
+    # lagged_3 = true[2:-3]
+    # lagged_2 = true[3:-2]
+    # lagged_1 = true[4:-1]
 
-lagged_5 = true[:-5]
-lagged_4 = true[1:-4]
-lagged_3 = true[2:-3]
-lagged_2 = true[3:-2]
-lagged_1 = true[4:-1]
-
-true= true[5:]
+true = true[window:]
 
 print(true.shape)
 print(lstm.shape)
 print(transformer.shape)
 print(mlpreg.shape)
 print(svr.shape)
-print(lagged_1.shape)
-print(lagged_2.shape)
-print(lagged_3.shape)
-print(lagged_4.shape)
-print(lagged_5.shape)
+# print(lagged_1.shape)
+# print(lagged_2.shape)
+# print(lagged_3.shape)
+# print(lagged_4.shape)
+# print(lagged_5.shape)
 
 # data = np.array(list(zip(lstm, transformer, mlpreg, svr, GPreg, true)))
 data = np.concatenate(
-    (lstm.reshape(-1, 1), transformer.reshape(-1, 1), mlpreg.reshape(-1, 1), svr.reshape(-1, 1), GPreg.reshape(-1, 1),
-     lagged_5.reshape(-1, 1), lagged_4.reshape(-1, 1), lagged_3.reshape(-1, 1), lagged_2.reshape(-1, 1),
-     lagged_1.reshape(-1, 1),
-     true.reshape(-1, 1)), axis=1)
+    (lstm.reshape(-1, 1), transformer.reshape(-1, 1), mlpreg.reshape(-1, 1), svr.reshape(-1, 1),
+     GPreg.reshape(-1, 1)), axis=1)
+for lag in lagged:
+    data = np.concatenate((data, lag.reshape(-1, 1)), axis=1)
+data = np.concatenate((data, true.reshape(-1, 1)), axis=1)
+
 print(data[0])
 print(data.shape)
 
