@@ -1,5 +1,4 @@
-## Stock Predictions
-
-#### High level steps:
+## Brent Oil Price Prediction
 
 - Time series analysis with transformers
+- Hybrid model
