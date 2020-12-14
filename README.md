@@ -3,6 +3,9 @@
 - Time series analysis with transformers
 - Hybrid model
 
+
+![alt text](figures/All Energy.png)
+
 ## Predicting the logarithmic return of prices instead of price it-self
 
 ### 1-Day ahead prediction using hybrid model on test set
