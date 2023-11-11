@@ -1,3 +1,7 @@
+
+A New Transformer-Based Hybrid Model for Forecasting Crude Oil Returns
+[Link to Paper](https://miscj.aut.ac.ir/article_4853_2aff1effea14f547578ddb40102ef681.pdf)
+
 ## Brent Oil Price Prediction
 
 - Time series analysis with transformers
